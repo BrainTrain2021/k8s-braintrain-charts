@@ -10,14 +10,15 @@ metadata:
   name: {{ $deployment.appName }}
   namespace: {{ $namespace.name }}
   annotations:
-    kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: public
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
   tls:
   - hosts:
     - {{ $deployment.host }}
-    secretName: braintrain-wildcard-tls
+    secretName: {{ $deployment.host }}-tls
   rules:
   - host: {{ $deployment.host }}
     http:
