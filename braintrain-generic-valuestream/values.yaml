@@ -1,0 +1,14 @@
+## Default values
+
+
+## Example values
+# projects:
+# - name: backend
+#   namespaces:
+#   - name: backend-prd
+#     deployments:
+#     - appName: myApp
+#       replicas: 1
+#       image: myrepo/myimage:latest
+#       host: myhost.braintrain.science.uu.nl
+#   - name: backend-tst

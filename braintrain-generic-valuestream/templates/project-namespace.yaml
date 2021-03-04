@@ -1,0 +1,13 @@
+{{- $projects := .Values.projects }}
+{{- range $project := $projects }}
+{{- range $namespace := $project.namespaces }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $namespace.name }}
+spec:
+  finalizers:
+  - kubernetes
+{{- end }}
+{{- end }}
