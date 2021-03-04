@@ -2,11 +2,19 @@ apiVersion: v1
 entries:
   braintrain-generic-valuestream:
   - apiVersion: v2
-    created: "2021-03-04T20:02:53.709745015+01:00"
+    created: "2021-03-04T20:10:05.820809045+01:00"
+    description: braintrain-generic-valuestream
+    digest: bbb639d1d109e270248c666c49fc4977caf52424f06bc19fcf1ca6a92a739470
+    name: braintrain-generic-valuestream
+    urls:
+    - braintrain-generic-valuestream-0.0.2.tgz
+    version: 0.0.2
+  - apiVersion: v2
+    created: "2021-03-04T20:10:05.820428505+01:00"
     description: braintrain-generic-valuestream
     digest: 18f612b5f195109ecacbe8727fca935214dc61862c31275625cd29e18eeede00
     name: braintrain-generic-valuestream
     urls:
     - braintrain-generic-valuestream-0.0.1.tgz
     version: 0.0.1
-generated: "2021-03-04T20:02:53.704750284+01:00"
+generated: "2021-03-04T20:10:05.818940767+01:00"
