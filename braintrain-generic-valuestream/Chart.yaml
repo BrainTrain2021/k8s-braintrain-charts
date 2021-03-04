@@ -1,4 +1,4 @@
 apiVersion: v2
 description: braintrain-generic-valuestream
-version: 0.0.3
+version: 0.0.4
 name: braintrain-generic-valuestream
