@@ -24,6 +24,7 @@ metadata:
     type: local
     app: postgres
 spec:
+  storageClassName: retained-microk8s-hostpath
   capacity:
     storage: {{ $namespace.postgresDb.size }}
   accessModes:
@@ -43,6 +44,7 @@ metadata:
   labels:
     app: postgres
 spec:
+  storageClassName: retained-microk8s-hostpath
   accessModes:
     - ReadWriteOnce
   resources:
