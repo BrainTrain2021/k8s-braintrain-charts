@@ -28,6 +28,9 @@ spec:
     storage: {{ $namespace.postgresDb.size }}
   accessModes:
     - ReadWriteOnce
+  claimRef:
+    namespace: {{ $namespace.name }}
+    name: postgres-pv-claim
   persistentVolumeReclaimPolicy: Retain
   hostPath:
     path: "/mnt/data"
