@@ -1,8 +1,8 @@
 {{- $projects := .Values.projects }}
 {{- range $project := $projects }}
 {{- range $namespace := $project.namespaces }}
-{{- if $namespace.database }}
-{{- if $namespace.database.deploy }}
+{{- if $namespace.postgresDb }}
+{{- if $namespace.postgresDb.deploy }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -14,7 +14,7 @@ metadata:
 data:
   POSTGRES_DB: postgresdb
   POSTGRES_USER: postgresadmin
-  POSTGRES_PASSWORD: admin123
+  POSTGRES_PASSWORD: admin123 # TODO: REMOVE PRODUCTION PASSWORD FROM SOURCE CONTROL!
 ---
 kind: PersistentVolume
 apiVersion: v1
@@ -25,7 +25,7 @@ metadata:
     app: postgres
 spec:
   capacity:
-    storage: {{ $namespace.database.size }}
+    storage: {{ $namespace.postgresDb.size }}
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
@@ -45,7 +45,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   resources:
     requests:
-      storage: {{ $namespace.database.size }}
+      storage: {{ $namespace.postgresDb.size }}
 ---
 apiVersion: apps/v1
 kind: Deployment
