@@ -42,7 +42,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
   resources:
     requests:
       storage: {{ $namespace.postgresDb.size }}
