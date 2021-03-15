@@ -1,0 +1,177 @@
+{{- $projects := .Values.projects }}
+{{- range $project := $projects }}
+{{- range $namespace := $project.namespaces }}
+{{- if $namespace.influxDb }}
+{{- if $namespace.influxDb.deploy }}
+---
+# Source: vs-backend/charts/influxdb/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: {{ $namespace.name }}
+  name: RELEASE-NAME-influxdb
+  labels:
+    helm.sh/chart: influxdb-4.9.14
+    app.kubernetes.io/name: influxdb
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.8.4"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: vs-backend/charts/influxdb/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ $namespace.name }}
+  name: RELEASE-NAME-influxdb
+  labels:
+    helm.sh/chart: influxdb-4.9.14
+    app.kubernetes.io/name: influxdb
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.8.4"
+    app.kubernetes.io/managed-by: Helm
+data:
+  influxdb.conf: |+
+    reporting-disabled = false
+    bind-address = ":8088"
+
+    [meta]
+      dir = "/var/lib/influxdb/meta"
+
+    [data]
+      dir = "/var/lib/influxdb/data"
+      wal-dir = "/var/lib/influxdb/wal"
+
+    [coordinator]
+
+    [retention]
+
+    [shard-precreation]
+
+    [monitor]
+
+    [subscriber]
+
+    [http]
+
+    # TODO: allow multiple graphite listeners
+
+    [[graphite]]
+
+    # TODO: allow multiple collectd listeners with templates
+
+    [[collectd]]
+
+    # TODO: allow multiple opentsdb listeners with templates
+
+    [[opentsdb]]
+
+    # TODO: allow multiple udp listeners with templates
+
+    [[udp]]
+
+    [continuous_queries]
+
+    [logging]
+---
+# Source: vs-backend/charts/influxdb/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: {{ $namespace.name }}
+  name: RELEASE-NAME-influxdb
+  labels:
+    helm.sh/chart: influxdb-4.9.14
+    app.kubernetes.io/name: influxdb
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.8.4"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+  - name: api
+    port: 8086
+    targetPort: api
+  - name: rpc
+    port: 8088
+    targetPort: rpc
+  selector:
+    app.kubernetes.io/name: influxdb
+    app.kubernetes.io/instance: RELEASE-NAME
+---
+# Source: vs-backend/charts/influxdb/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: {{ $namespace.name }}
+  name: RELEASE-NAME-influxdb
+  labels:
+    helm.sh/chart: influxdb-4.9.14
+    app.kubernetes.io/name: influxdb
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.8.4"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: influxdb
+      app.kubernetes.io/instance: RELEASE-NAME
+  serviceName: "RELEASE-NAME-influxdb"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: influxdb
+        app.kubernetes.io/instance: RELEASE-NAME
+    spec:
+      serviceAccountName: RELEASE-NAME-influxdb
+      containers:
+      - name: RELEASE-NAME-influxdb
+        image: "influxdb:1.8.0-alpine"
+        imagePullPolicy: "IfNotPresent"
+        resources:
+          {}
+        ports:
+        - name: api
+          containerPort: 8086
+        - name: rpc
+          containerPort: 8088
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: api
+            scheme: HTTP
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: api
+            scheme: HTTP
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        volumeMounts:
+        - name: RELEASE-NAME-influxdb-data
+          mountPath: /var/lib/influxdb
+        - name: config
+          mountPath: /etc/influxdb
+      volumes:
+      - name: config
+        configMap:
+          name: RELEASE-NAME-influxdb
+      # Cannot use existing claim in enterprise mode
+  # Must use volume claim template in enterprise mode
+  volumeClaimTemplates:
+    - metadata:
+        name: RELEASE-NAME-influxdb-data
+        annotations:
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: {{ $namespace.influxDb.size }}
+        storageClassName: "retained-microk8s-hostpath"
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
