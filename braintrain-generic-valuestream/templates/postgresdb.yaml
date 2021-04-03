@@ -95,6 +95,33 @@ spec:
    - port: 5432
   selector:
    app: postgres
+{{- if $namespace.postgresDb.ingress }}
+{{- if $namespace.postgresDb.ingress.enabled }}
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: postgresql-db-ingress
+  namespace: {{ $namespace.name }}
+  annotations:
+    kubernetes.io/ingress.class: public
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  tls:
+  - hosts:
+    - {{ $namespace.postgresDb.ingress.host }}
+    secretName: {{ $namespace.postgresDb.ingress.host }}-tls
+  rules:
+  - host: {{ $namespace.postgresDb.ingress.host }}
+    http:
+      paths:
+      - backend:
+          serviceName: postgres
+          servicePort: 5432
+{{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
