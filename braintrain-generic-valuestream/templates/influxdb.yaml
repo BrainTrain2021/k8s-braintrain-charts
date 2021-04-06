@@ -96,25 +96,39 @@ spec:
     app.kubernetes.io/name: influxdb2
     app.kubernetes.io/instance: influxdb2
 ---
-# Source: test/charts/influxdb2/templates/persistent-volume-claim.yaml
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ $namespace.name }}-influxdb2-pv-volume
+  labels:
+    type: local
+    app: influxdb2
+spec:
+  storageClassName: retained-microk8s-hostpath
+  capacity:
+    storage: {{ $namespace.influxDb.size }}
+  accessModes:
+    - ReadWriteOnce
+  claimRef:
+    namespace: {{ $namespace.name }}
+    name: influxdb2-pv-claim
+  hostPath:
+    path: "/mnt/data"
+---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: {{ $namespace.name }}-influxdb2
+  name: influxdb2-pv-claim
+  namespace: {{ $namespace.name }}
   labels:
-    app.kubernetes.io/name: influxdb2
-    helm.sh/chart: influxdb2-1.1.0
-    app.kubernetes.io/instance: influxdb2
-    app.kubernetes.io/version: "2.0.4"
-    app.kubernetes.io/managed-by: Helm
-  annotations:
-    helm.sh/resource-policy: "keep"
+    app: influxdb2
 spec:
+  storageClassName: retained-microk8s-hostpath
   accessModes:
-    - "ReadWriteOnce"
+    - ReadWriteOnce
   resources:
     requests:
-      storage: "10Gi"
+      storage: {{ $namespace.influxDb.size }}
 ---
 # Source: test/charts/influxdb2/templates/statefulset.yaml
 apiVersion: apps/v1
@@ -125,7 +139,7 @@ metadata:
   labels:
     app.kubernetes.io/name: influxdb2
     helm.sh/chart: influxdb2-1.1.0
-    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/instance: influxdb2
     app.kubernetes.io/version: "2.0.4"
     app.kubernetes.io/managed-by: Helm
 spec:
@@ -139,14 +153,14 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: influxdb2
-        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/instance: influxdb2
       annotations:
         {}
     spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: influxdb2
+            claimName: influxdb2-pv-claim
       containers:
         - name: influxdb2
           image: "quay.io/influxdb/influxdb:v2.0.4"
