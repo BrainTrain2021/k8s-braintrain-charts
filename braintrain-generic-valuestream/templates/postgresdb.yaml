@@ -4,18 +4,6 @@
 {{- if $namespace.postgresDb }}
 {{- if $namespace.postgresDb.deploy }}
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgres-config
-  namespace: {{ $namespace.name }}
-  labels:
-    app: postgres
-data:
-  POSTGRES_DB: postgresdb
-  POSTGRES_USER: postgresadmin
-  POSTGRES_PASSWORD: 028d6097021bc2ff9a23397bbe1b8018 # TODO: REMOVE PRODUCTION PASSWORD FROM SOURCE CONTROL!
----
 kind: PersistentVolume
 apiVersion: v1
 metadata:
@@ -50,6 +38,137 @@ spec:
     requests:
       storage: {{ $namespace.postgresDb.size }}
 ---
+# Source: test/charts/postgresql/templates/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  labels:
+    app.kubernetes.io/name: postgresql
+    helm.sh/chart: postgresql-10.3.15
+    app.kubernetes.io/instance: postgresql
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: primary
+  annotations:
+  namespace: default
+spec:
+  serviceName: postgresql-headless
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/instance: postgresql
+      role: primary
+  template:
+    metadata:
+      name: postgresql
+      labels:
+        app.kubernetes.io/name: postgresql
+        helm.sh/chart: postgresql-10.3.15
+        app.kubernetes.io/instance: postgresql
+        app.kubernetes.io/managed-by: Helm
+        role: primary
+        app.kubernetes.io/component: primary
+    spec:      
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: postgresql
+                    app.kubernetes.io/instance: postgresql
+                    app.kubernetes.io/component: primary
+                namespaces:
+                  - "default"
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+          
+      securityContext:
+        fsGroup: 1001
+      containers:
+        - name: postgresql
+          image: docker.io/bitnami/postgresql:11.11.0-debian-10-r54
+          imagePullPolicy: "IfNotPresent"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            runAsUser: 1001
+          env:
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: POSTGRESQL_PORT_NUMBER
+              value: "5432"
+            - name: POSTGRESQL_VOLUME_DIR
+              value: "/bitnami/postgresql"
+            - name: PGDATA
+              value: "/bitnami/postgresql/data"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-credentials
+                  key: postgresql-password
+            - name: POSTGRESQL_ENABLE_LDAP
+              value: "no"
+            - name: POSTGRESQL_ENABLE_TLS
+              value: "no"
+            - name: POSTGRESQL_LOG_HOSTNAME
+              value: "false"
+            - name: POSTGRESQL_LOG_CONNECTIONS
+              value: "false"
+            - name: POSTGRESQL_LOG_DISCONNECTIONS
+              value: "false"
+            - name: POSTGRESQL_PGAUDIT_LOG_CATALOG
+              value: "off"
+            - name: POSTGRESQL_CLIENT_MIN_MESSAGES
+              value: "error"
+            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+              value: "pgaudit"
+          ports:
+            - name: tcp-postgresql
+              containerPort: 5432
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U "postgres" -h 127.0.0.1 -p 5432
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - -e
+                - |
+                  exec pg_isready -U "postgres" -h 127.0.0.1 -p 5432
+                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+          volumeMounts:
+            - name: postgresdb
+              mountPath: /bitnami/postgresql
+      volumes:
+        - name: postgresdb
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -82,46 +201,52 @@ spec:
           persistentVolumeClaim:
             claimName: postgres-pv-claim
 ---
+# Source: test/charts/postgresql/templates/svc-headless.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres
-  namespace: {{ $namespace.name }}
+  name: postgresql-headless
   labels:
-    app: postgres
-spec:
-  type: NodePort
-  ports:
-   - port: 5432
-  selector:
-   app: postgres
-{{- if $namespace.postgresDb.ingress }}
-{{- if $namespace.postgresDb.ingress.enabled }}
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: postgresql-db-ingress
+    app.kubernetes.io/name: postgresql
+    helm.sh/chart: postgresql-10.3.15
+    app.kubernetes.io/instance: postgresql
+    app.kubernetes.io/managed-by: Helm
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
   namespace: {{ $namespace.name }}
-  annotations:
-    kubernetes.io/ingress.class: public
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-    cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
-  tls:
-  - hosts:
-    - {{ $namespace.postgresDb.ingress.host }}
-    secretName: {{ $namespace.postgresDb.ingress.host }}-tls
-  rules:
-  - host: {{ $namespace.postgresDb.ingress.host }}
-    http:
-      paths:
-      - backend:
-          serviceName: postgres
-          servicePort: 5432
-{{- end }}
-{{- end }}
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: postgresql
+---
+# Source: test/charts/postgresql/templates/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+  labels:
+    app.kubernetes.io/name: postgresql
+    helm.sh/chart: postgresql-10.3.15
+    app.kubernetes.io/instance: postgresql
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+  namespace: {{ $namespace.name }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: postgresql
+    role: primary
 {{- end }}
 {{- end }}
 {{- end }}
