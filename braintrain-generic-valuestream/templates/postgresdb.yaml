@@ -51,7 +51,6 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: primary
   annotations:
-  namespace: default
 spec:
   serviceName: postgresql-headless
   replicas: 1
