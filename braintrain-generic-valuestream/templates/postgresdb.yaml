@@ -63,6 +63,7 @@ spec:
       app.kubernetes.io/instance: postgresql
       role: primary
   template:
+    namespace: {{ $namespace.name}}
     metadata:
       name: postgresql
       labels:
