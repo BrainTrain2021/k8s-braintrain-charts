@@ -229,27 +229,25 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-production
-    kubernetes.io/ingress.class: public
-    nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
-    nginx.ingress.kubernetes.io/ssl-passthrough: 'true'
-  labels:
-    app.kubernetes.io/instance: generic-vs-backend
   name: influxdb2
   namespace: {{ $namespace.name }}
+  annotations:
+    kubernetes.io/ingress.class: public
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-production
 spec:
-  rules:
-    - host: science-vs255.science.uu.nl
-      http:
-        paths:
-          - backend:
-              serviceName: influxdb2
-              servicePort: 80
   tls:
-    - hosts:
-        - science-vs255.science.uu.nl
-      secretName: science-vs255.science.uu.nl-tls
+  - hosts:
+    - science-vs255.science.uu.nl
+    secretName: science-vs255.science.uu.nl-tls
+  rules:
+  - host: science-vs255.science.uu.nl
+    http:
+      paths:
+      - backend:
+          serviceName: influxdb2
+          servicePort: 80
 {{- end }}
 {{- end }}
 {{- end }}
