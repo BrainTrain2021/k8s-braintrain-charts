@@ -9,12 +9,12 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   namespace: {{ $namespace.name }}
-  name: influxdb-influxdb
+  name: influxdb2
   labels:
-    helm.sh/chart: influxdb-4.9.14
-    app.kubernetes.io/name: influxdb
-    app.kubernetes.io/instance: influxdb
-    app.kubernetes.io/version: "1.8.4"
+    app.kubernetes.io/name: influxdb2
+    helm.sh/chart: influxdb2-1.1.0
+    app.kubernetes.io/instance: influxdb2
+    app.kubernetes.io/version: "2.0.4"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: vs-backend/charts/influxdb/templates/configmap.yaml
@@ -24,10 +24,10 @@ metadata:
   namespace: {{ $namespace.name }}
   name: influxdb-influxdb
   labels:
-    helm.sh/chart: influxdb-4.9.14
-    app.kubernetes.io/name: influxdb
-    app.kubernetes.io/instance: influxdb
-    app.kubernetes.io/version: "1.8.4"
+    app.kubernetes.io/name: influxdb2
+    helm.sh/chart: influxdb2-1.1.0
+    app.kubernetes.io/instance: influxdb2
+    app.kubernetes.io/version: "2.0.4"
     app.kubernetes.io/managed-by: Helm
 data:
   influxdb.conf: |+
@@ -73,104 +73,176 @@ data:
 
     [logging]
 ---
-# Source: vs-backend/charts/influxdb/templates/service.yaml
+# Source: test/charts/influxdb2/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
   namespace: {{ $namespace.name }}
-  name: influxdb-influxdb
+  name: influxdb2
   labels:
-    helm.sh/chart: influxdb-4.9.14
-    app.kubernetes.io/name: influxdb
-    app.kubernetes.io/instance: influxdb
-    app.kubernetes.io/version: "1.8.4"
+    app.kubernetes.io/name: influxdb2
+    helm.sh/chart: influxdb2-1.1.0
+    app.kubernetes.io/instance: influxdb2
+    app.kubernetes.io/version: "2.0.4"
     app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
   ports:
-  - name: api
-    port: 8086
-    targetPort: api
-  - name: rpc
-    port: 8088
-    targetPort: rpc
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8086
   selector:
-    app.kubernetes.io/name: influxdb
-    app.kubernetes.io/instance: influxdb
+    app.kubernetes.io/name: influxdb2
+    app.kubernetes.io/instance: influxdb2
 ---
-# Source: vs-backend/charts/influxdb/templates/statefulset.yaml
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: {{ $namespace.name }}-influxdb2-pv-volume
+  labels:
+    type: local
+    app: influxdb2
+spec:
+  storageClassName: retained-microk8s-hostpath
+  capacity:
+    storage: {{ $namespace.influxDb.size }}
+  accessModes:
+    - ReadWriteOnce
+  claimRef:
+    namespace: {{ $namespace.name }}
+    name: influxdb2-pv-claim
+  hostPath:
+    path: "/mnt/data"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: influxdb2-pv-claim
+  namespace: {{ $namespace.name }}
+  labels:
+    app: influxdb2
+spec:
+  storageClassName: retained-microk8s-hostpath
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $namespace.influxDb.size }}
+---
+# Source: test/charts/influxdb2/templates/statefulset.yaml
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   namespace: {{ $namespace.name }}
-  name: influxdb-influxdb
+  name: influxdb2
   labels:
-    helm.sh/chart: influxdb-4.9.14
-    app.kubernetes.io/name: influxdb
-    app.kubernetes.io/instance: influxdb
-    app.kubernetes.io/version: "1.8.4"
+    app.kubernetes.io/name: influxdb2
+    helm.sh/chart: influxdb2-1.1.0
+    app.kubernetes.io/instance: influxdb2
+    app.kubernetes.io/version: "2.0.4"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: influxdb
-      app.kubernetes.io/instance: influxdb
-  serviceName: "influxdb-influxdb"
+      app.kubernetes.io/name: influxdb2
+      app.kubernetes.io/instance: influxdb2
+  serviceName: "influxdb2"
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: influxdb
-        app.kubernetes.io/instance: influxdb
+        app.kubernetes.io/name: influxdb2
+        app.kubernetes.io/instance: influxdb2
+      annotations:
+        {}
     spec:
-      serviceAccountName: influxdb-influxdb
-      containers:
-      - name: influxdb-influxdb
-        image: "influxdb:1.8.0-alpine"
-        imagePullPolicy: "IfNotPresent"
-        resources:
-          {}
-        ports:
-        - name: api
-          containerPort: 8086
-        - name: rpc
-          containerPort: 8088
-        livenessProbe:
-          httpGet:
-            path: /ping
-            port: api
-            scheme: HTTP
-          initialDelaySeconds: 30
-          timeoutSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /ping
-            port: api
-            scheme: HTTP
-          initialDelaySeconds: 5
-          timeoutSeconds: 1
-        volumeMounts:
-        - name: influxdb-influxdb-data
-          mountPath: /var/lib/influxdb
-        - name: config
-          mountPath: /etc/influxdb
       volumes:
-      - name: config
-        configMap:
-          name: influxdb-influxdb
-      # Cannot use existing claim in enterprise mode
-  # Must use volume claim template in enterprise mode
-  volumeClaimTemplates:
-    - metadata:
-        name: influxdb-influxdb-data
-        annotations:
-      spec:
-        accessModes:
-          - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: {{ $namespace.influxDb.size }}
-        storageClassName: "retained-microk8s-hostpath"
+        - name: data
+          persistentVolumeClaim:
+            claimName: influxdb2-pv-claim
+      containers:
+        - name: influxdb2
+          image: "quay.io/influxdb/influxdb:v2.0.4"
+          imagePullPolicy: IfNotPresent
+          args:
+            - influxd
+            - --engine-path
+            - /root/.influxdbv2
+          ports:
+            - name: http
+              containerPort: 8086
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          volumeMounts:
+          - name: data
+            mountPath: /root/.influxdbv2
+          resources:
+            {}
+---          
+# Source: test/charts/influxdb2/templates/job-setup-admin.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: {{ $namespace.name }}
+  labels:
+    app.kubernetes.io/name: influxdb2
+    helm.sh/chart: influxdb2-1.1.0
+    app.kubernetes.io/instance: influxdb2
+    app.kubernetes.io/version: "2.0.4"
+    app.kubernetes.io/managed-by: Helm
+  name: influxdb2-create-admin-user
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": "hook-succeeded,before-hook-creation"
+spec:
+  activeDeadlineSeconds: 90
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: influxdb2
+        helm.sh/chart: influxdb2-1.1.0
+        app.kubernetes.io/instance: influxdb2
+        app.kubernetes.io/version: "2.0.4"
+        app.kubernetes.io/managed-by: Helm
+      annotations:
+        {}
+    spec:
+      containers:
+      - name: influxdb2-create-admin-user
+        image: "quay.io/influxdb/influxdb:v2.0.4"
+        env:
+          - name: INFLUXDB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: influxdb2-auth
+                key: admin-password
+          - name: INFLUXDB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: influxdb2-auth
+                key: admin-token
+        command:
+          - bash
+        args:
+          - -c
+          - |
+            influx setup -f \
+            --host http://influxdb2:80 \
+            -o influxdata \
+            -b default \
+            -u admin \
+            -r 0s \
+            -p ${INFLUXDB_PASSWORD} \
+            -t ${INFLUXDB_TOKEN}
+      restartPolicy: OnFailure
 {{- end }}
 {{- end }}
 {{- end }}
