@@ -225,6 +225,7 @@ spec:
             -p ${INFLUXDB_PASSWORD} \
             -t ${INFLUXDB_TOKEN}
       restartPolicy: OnFailure
+{{- if $namespace.influxDb.host }}
 ---
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -239,15 +240,21 @@ metadata:
 spec:
   tls:
   - hosts:
-    - science-vs255.science.uu.nl
-    secretName: science-vs255.science.uu.nl-tls
+    - {{ $namespace.influxDb.host }}
+    secretName: {{ $namespace.influxDb.host }}-tls
   rules:
-  - host: science-vs255.science.uu.nl
+  - host: {{ $namespace.influxDb.host }}
     http:
       paths:
       - backend:
+          serviceName: this-is-not-an-existing-service
+          servicePort: 80
+        path: /debug/pprof
+        pathType: ImplementationSpecific
+      - backend:
           serviceName: influxdb2
           servicePort: 80
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
