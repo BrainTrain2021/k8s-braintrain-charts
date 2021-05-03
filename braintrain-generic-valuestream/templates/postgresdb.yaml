@@ -4,25 +4,6 @@
 {{- if $namespace.postgresDb }}
 {{- if $namespace.postgresDb.deploy }}
 ---
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ $namespace.name }}-postgres-pv-volume
-  labels:
-    type: local
-    app: postgres
-spec:
-  storageClassName: retained-microk8s-hostpath
-  capacity:
-    storage: {{ $namespace.postgresDb.size }}
-  accessModes:
-    - ReadWriteOnce
-  claimRef:
-    namespace: {{ $namespace.name }}
-    name: postgres-pv-claim
-  hostPath:
-    path: "/mnt/data"
----
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:

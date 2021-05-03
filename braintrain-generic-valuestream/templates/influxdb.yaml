@@ -78,25 +78,6 @@ spec:
     app.kubernetes.io/name: influxdb2
     app.kubernetes.io/instance: influxdb2
 ---
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: {{ $namespace.name }}-influxdb2-pv-volume
-  labels:
-    type: local
-    app: influxdb2
-spec:
-  storageClassName: retained-microk8s-hostpath
-  capacity:
-    storage: {{ $namespace.influxDb.size }}
-  accessModes:
-    - ReadWriteOnce
-  claimRef:
-    namespace: {{ $namespace.name }}
-    name: influxdb2-pv-claim
-  hostPath:
-    path: "/mnt/data"
----
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
