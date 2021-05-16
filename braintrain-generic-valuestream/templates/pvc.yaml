@@ -1,0 +1,22 @@
+{{- $projects := .Values.projects }}
+{{- range $project := $projects }}
+{{- range $namespace := $project.namespaces }}
+{{- range $deployment := $namespace.deployments }}
+{{- if $deployment.persistentStorage }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name:  {{ $namespace.persistentStorage.name }}-pv-claim
+  namespace: {{ $namespace.name }}
+spec:
+  storageClassName: retained-microk8s-hostpath
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $namespace.persistentStorage.size }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
