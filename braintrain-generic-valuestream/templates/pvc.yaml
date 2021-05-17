@@ -7,7 +7,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name:  {{ $namespace.persistentStorage.name }}-pv-claim
+  name:  {{ $deployment.persistentStorage.name }}-pv-claim
   namespace: {{ $namespace.name }}
 spec:
   storageClassName: retained-microk8s-hostpath
@@ -15,7 +15,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{ $namespace.persistentStorage.size }}
+      storage: {{ $deployment.persistentStorage.size }}
 {{- end }}
 {{- end }}
 {{- end }}
