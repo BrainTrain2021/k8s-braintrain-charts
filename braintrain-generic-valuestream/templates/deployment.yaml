@@ -34,8 +34,20 @@ spec:
               secretKeyRef:
                 name: {{ $secret.name }}
                 key: {{ $secret.key }}
-        {{- end}}
-        {{- end}}
+        {{- end }}
+        {{- end }}
+        {{- if $deployment.configMap }}
+        {{- if $deployment.configMap.values }}
+        env:
+        {{- range $envVariable := $deployment.configMap.values}}
+          - name: {{ $envVariable.envName }}
+            valueFrom:
+              configMapKeyRef:
+                name: {{ $deployment.configMap.name }}
+                key: {{ $envVariable.key }}
+        {{- end }}
+        {{- end }}
+        {{- end }}
         {{- if $deployment.persistentStorage }}
         volumeMounts:
         - name: {{ $deployment.persistentStorage.name }}-volume
