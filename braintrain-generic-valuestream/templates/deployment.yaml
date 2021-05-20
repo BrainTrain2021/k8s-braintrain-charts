@@ -26,8 +26,9 @@ spec:
         ports:
         - containerPort: 80
         imagePullPolicy: Always
-        {{- if $deployment.secrets }}
+        {{- if or ($deployment.secrets) ($deployment.configMap) }}
         env:
+        {{- if $deployment.secrets }}
         {{- range $secret := $deployment.secrets}}
           - name: {{ $secret.envName }}
             valueFrom:
@@ -38,13 +39,13 @@ spec:
         {{- end }}
         {{- if $deployment.configMap }}
         {{- if $deployment.configMap.values }}
-        env:
         {{- range $envVariable := $deployment.configMap.values}}
           - name: {{ $envVariable.envName }}
             valueFrom:
               configMapKeyRef:
                 name: {{ $deployment.configMap.name }}
                 key: {{ $envVariable.key }}
+        {{- end }}
         {{- end }}
         {{- end }}
         {{- end }}
