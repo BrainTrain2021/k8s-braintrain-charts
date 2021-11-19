@@ -54,7 +54,7 @@ entries:
     description: braintrain-generic-valuestream
     digest: 2ae0d335e02e3812e9754c4f44c10015cad0486bf51f2158a73d36bf0394ee29
     name: braintrain-generic-valuestream
-    urls:
+    urls: 
     - braintrain-generic-valuestream-0.0.44.tgz
     version: 0.0.44
   - apiVersion: v2
